@@ -1,4 +1,4 @@
-/* Target the caption inside the react-bootstrap Carousel */
+
 .carousel-caption {
   top: 0;
   left: 0;
@@ -6,10 +6,10 @@
   bottom: 0;
   display: flex !important;
   flex-direction: column;
-  justify-content: center; /* Vertical center */
-  align-items: center;     /* Horizontal center */
-  padding-bottom: 0;       /* Remove default bottom spacing */
-  pointer-events: none;    /* Crucial: lets you click the arrows "through" the text */
+  justify-content: center; 
+  align-items: center;     
+  padding-bottom: 0;       
+  pointer-events: none;    
 }
 
 .carousel-caption h1 {
@@ -21,4 +21,40 @@
 }
 .carousel-caption p {
     color: black;
+}
+
+
+.carousel-form-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+}
+
+
+.auth-inner {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 400px;
+  color: #333; 
+}
+
+
+.carousel-item {
+  height: 100vh;
+  min-height: 300px; 
+}
+
+.carousel-item img {
+  height: 100vh;
+  width: 100%;
+  object-fit: cover;
 }
