@@ -16,7 +16,8 @@
     color: black;
 } 
 .carousel-caption h3 {
-    background-color: #B7FFBA;
+    background-color: #00a66f84;
+;
     color: black;
 }
 .carousel-caption p {
@@ -33,7 +34,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 5;
+  z-index: 1;
+  pointer-events: none;
 }
 
 
@@ -45,6 +47,9 @@
   width: 100%;
   max-width: 400px;
   color: #333; 
+  z-index: 2;
+  position: relative;
+  pointer-events: auto;
 }
 
 
@@ -57,4 +62,11 @@
   height: 100vh;
   width: 100%;
   object-fit: cover;
+}
+
+
+.carousel-control-prev,
+.carousel-control-next,
+.carousel-indicators {
+  z-index: 10 !important; 
 }

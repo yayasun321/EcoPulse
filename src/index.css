@@ -16,11 +16,11 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #00a66f;
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #00a66f;
 }
 
 body {
@@ -61,7 +61,7 @@ button:focus-visible {
     background-color: #FFFCA8;
   }
   a:hover {
-    color: #747bff;
+    color: #00a66f;
   }
   button {
     background-color: #f9f9f9;
@@ -73,7 +73,7 @@ button:focus-visible {
   box-sizing: border-box;
 }
 body {
-  background: #1C8EF9 !important;
+  background: #00a66f !important;
   min-height: 100vh;
   display: flex;
   font-weight: 400;
@@ -101,14 +101,15 @@ body, html, .App, #root, .auth-wrapper {
   width: 450px;
   margin: auto;
   background: #ffffff;
-  box-shadow: 0px 14px 80px rgba(34, 35, 58, 0.2);
+  
   padding: 40px 55px 45px 55px;
   border-radius: 15px;
   transition: all .3s;
 }
 .auth-wrapper .form-control:focus {
-  border-color: #B7FFBA;
-  box-shadow: none;
+  border-color: #00a66f;
+  box-shadow: 0 0 0 0.25rem rgba(87, 211, 100, 0.25) !important;
+  outline: 0;
 }
 .auth-wrapper h3 {
   text-align: center;
@@ -121,13 +122,30 @@ body, html, .App, #root, .auth-wrapper {
 }
 .forgot-password,
 .forgot-password a {
-  text-align: right;
-  font-size: 13px;
+  text-align: left;
+  font-size: 15px;
   padding-top: 10px;
-  color: #B7FFBA;
+  color: #213547;
   margin: 0;
 }
 .forgot-password a {
-  color: #B7FFBA;
+  color: #00a66f;
+  text-decoration: underline;
 }
+
+.btn-secondary {
+  background-color: #00a66f !important;
+  color: #213547;
+}
+
+.btn-link {
+  color: #00a66f !important;
+  text-decoration: underline;
+  
+}
+
+.form-control {
+  border-color: #00a66f;
+}
+
 
