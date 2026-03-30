@@ -7,9 +7,6 @@ function MyCarousel() {
   return (
     <Carousel data-bs-theme="dark">
       <Carousel.Item>
-        <div className="slide-text">
-          <h5>test</h5>
-        </div>
         <img src={background} />
 
         <Carousel.Caption>
