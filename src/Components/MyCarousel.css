@@ -1,0 +1,24 @@
+/* Target the caption inside the react-bootstrap Carousel */
+.carousel-caption {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center; /* Vertical center */
+  align-items: center;     /* Horizontal center */
+  padding-bottom: 0;       /* Remove default bottom spacing */
+  pointer-events: none;    /* Crucial: lets you click the arrows "through" the text */
+}
+
+.carousel-caption h1 {
+    color: black;
+} 
+.carousel-caption h3 {
+    background-color: #B7FFBA;
+    color: black;
+}
+.carousel-caption p {
+    color: black;
+}
