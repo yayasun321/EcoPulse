@@ -1,6 +1,12 @@
-import Message from './Message';
-function App(){
-  return <div><Message /></div>
+import Box from "./Box";
+//import Check from "./Check";
+function App() {
+  //return <div><Box /></div>
+  return (
+    <div>
+      <Box />
+    </div>
+  );
 }
 
 export default App;
