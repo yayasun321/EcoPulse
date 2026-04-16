@@ -247,12 +247,9 @@ export default function App() {
 }
 
 
-// ============================================================
 // HOME PAGE
-//
 // Shows the stats (saved/opted out/streak),
-// a URL input box, and the decision log below.
-// ============================================================
+// a URL input box
 const EXAMPLE_URL = 'https://fifthandninth.com/products/blue-light-blocking-glasses-boston?variant=32219277754446&country=US&currency=USD&utm_medium=product_sync&utm_source=google&utm_content=sag_organic&utm_campaign=sag_organic&srsltid=AfmBOopt6-hUCKOSNN3QaxN_76kvtDJd9zFvZvWqbYT88PzQ1GoCDfyq6XY'
 
 function HomePage({ logs, streak, saved, onStart }) {
