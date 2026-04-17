@@ -1,9 +1,47 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import './index.css'
-import { urlToSearchQuery, searchShopping } from './serper
+import { urlToSearchQuery, searchShopping } from './serper'
 
+// ── Types ────────────────────────────────────────────────────────────────────
 
-function getSiteName(url) {
+interface Alternative {
+  title: string
+  price: number
+  priceStr?: string
+  rating?: number
+  source?: string
+  imageUrl?: string
+}
+
+interface Product {
+  name: string
+  price: number
+  priceStr: string | null
+  rating: number | null
+  ratingCount: number
+  site: string
+  url: string
+  icon?: string
+  alternatives: Alternative[]
+}
+
+interface LogEntry {
+  name: string
+  price: number
+  verdict: string
+  date: string
+}
+
+interface VerdictInfo {
+  icon: string
+  label: string
+  headline: string
+  reason: string
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function getSiteName(url: string): string {
   try {
     return new URL(url).hostname.replace('www.', '')
   } catch {
@@ -11,15 +49,11 @@ function getSiteName(url) {
   }
 }
 
-// Extracts a search query from the pasted URL, searches Google
-// Shopping, and returns the top result as the product plus
-// remaining results as alternatives.
-async function fetchProduct(url) {
+async function fetchProduct(url: string): Promise<Product> {
   let name     = ''
   let price    = 0
-  let priceStr = null
+  let priceStr: string | null = null
 
-// shopify stores expose a free public JSON endpoint 
   try {
     const { origin, pathname } = new URL(url)
     const match = pathname.match(/^\/products\/([^/?]+)/)
@@ -32,7 +66,6 @@ async function fetchProduct(url) {
         const variant = p?.variants?.[0]
         if (p?.title) {
           const cleanTitle = p.title.replace(/\s+/g, ' ').trim()
-          // Append product_type if the title alone is not descriptive enough
           const type = p.product_type?.replace(/\s+/g, ' ').trim()
           name = (type && cleanTitle.split(' ').length <= 2 && !cleanTitle.toLowerCase().includes(type.toLowerCase()))
             ? `${cleanTitle} ${type}`
@@ -43,17 +76,13 @@ async function fetchProduct(url) {
           priceStr = `$${parseFloat(variant.price).toFixed(2)}`
         }
       }
-    } 
-  } catch (e) {( e.message) }
+    }
+  } catch {}
 
-  // Always prefer the URL path for the product name — it's more reliable than
-  // page titles which can be the site name or require JavaScript to render
   if (!name) name = urlToSearchQuery(url)
 
-  // Microlink fetches the page for price 
   if (!priceStr && price === 0) {
     try {
-      // Strip tracking params
       const cleanUrl = (() => {
         const u = new URL(url)
         ;['com_cvv', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'currency'].forEach(p => u.searchParams.delete(p))
@@ -62,33 +91,31 @@ async function fetchProduct(url) {
       const ml   = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(cleanUrl)}`)
       const json = await ml.json()
       const data = json.data || {}
-      const raw = data.price?.amount
+      const raw: string | undefined = data.price?.amount
       if (raw) {
         price    = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0
         priceStr = raw
       }
-    } catch (e) {( e.message) }
+    } catch {}
   }
 
   if (!name) name = 'Product from link'
-   name, '| price:', price, '| priceStr:', priceStr)
 
-  // Get ratings/alt. from Serper
-  let rating       = null
-  let ratingCount  = 0
-  let alternatives = []
+  let rating: number | null = null
+  let ratingCount           = 0
+  let alternatives: Alternative[] = []
 
   try {
     const results = await searchShopping(name)
-    rating       = results.product?.rating      || null
-    ratingCount  = results.product?.ratingCount || 0
-    alternatives = results.alternatives          || []
+    rating       = results.product?.rating      ?? null
+    ratingCount  = results.product?.ratingCount ?? 0
+    alternatives = results.alternatives          ?? []
 
     if (!priceStr && price === 0 && results.product?.price > 0) {
       price    = results.product.price
       priceStr = results.product.priceStr
     }
-  } catch (e) { console.log('[Step 3] Serper failed:', e.message) }
+  } catch {}
 
   return {
     name,
@@ -102,124 +129,92 @@ async function fetchProduct(url) {
   }
 }
 
+// ── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [page, setPage] = useState('home')      // which screen is showing right now
-  const [product, setProduct] = useState(null)  // the product the user is evaluating
-  const [budgetMin, setBudgetMin] = useState(0) // the user's minimum budget (from step 2)
-  const [budgetMax, setBudgetMax] = useState(0) // the user's maximum budget (from step 2)
-  // Load persisted values from localStorage on first render, fall back to empty defaults
-  const [logs, setLogs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('eva_logs')) || [] } catch { return [] }
+  const [page, setPage]             = useState<'home' | 'flow' | 'verdict'>('home')
+  const [product, setProduct]       = useState<Product | null>(null)
+  const [budgetMin, setBudgetMin]   = useState<number>(0)
+  const [budgetMax, setBudgetMax]   = useState<number>(0)
+  const [avgScore, setAvgScore]     = useState<number | null>(null)
+  const [logs, setLogs]             = useState<LogEntry[]>(() => {
+    try { return JSON.parse(localStorage.getItem('eva_logs') ?? '[]') || [] } catch { return [] }
   })
-  const [streak, setStreak] = useState(() => {
-    return parseInt(localStorage.getItem('eva_streak') || '0', 10)
-  })
-  const [saved, setSaved] = useState(() => {
-    return parseFloat(localStorage.getItem('eva_saved') || '0')
-  })
-  const [verdict, setVerdict] = useState(null)      
-  const [selectedAlt, setSelectedAlt] = useState(null) 
+  const [streak, setStreak]         = useState<number>(() =>
+    parseInt(localStorage.getItem('eva_streak') ?? '0', 10)
+  )
+  const [saved, setSaved]           = useState<number>(() =>
+    parseFloat(localStorage.getItem('eva_saved') ?? '0')
+  )
+  const [verdict, setVerdict]       = useState<string | null>(null)
+  const [selectedAlt, setSelectedAlt] = useState<Alternative | null>(null)
 
-  // Persist logs, streak, and saved to localStorage whenever they change
   useEffect(() => { localStorage.setItem('eva_logs',   JSON.stringify(logs)) }, [logs])
   useEffect(() => { localStorage.setItem('eva_streak', String(streak)) },       [streak])
   useEffect(() => { localStorage.setItem('eva_saved',  String(saved)) },        [saved])
 
-  // Decide whether the user should buy or wait based on budget and quality
-  function getVerdict() {
-    if (product && budgetMax > 0 && product.price > budgetMax) {
-      return 'do not buy'
-    }
-    else if(avgScore > 6){
-      return 'buy'
-    }
-    else:
-      return 'do not buy'
+  function getVerdict(): string {
+    if (product && budgetMax > 0 && product.price > budgetMax) return 'do not buy'
+    if (avgScore !== null && avgScore > 6) return 'buy'
+    return 'do not buy'
   }
 
-  // Called when the user clicks "Analyse →" on the home screen.
-  // Sets the product and navigates to the flow screen.
-  function startFlow(chosenProduct) {
+  function startFlow(chosenProduct: Product): void {
     setProduct(chosenProduct)
     setBudgetMin(0)
     setBudgetMax(0)
+    setAvgScore(null)
     setPage('flow')
   }
 
-  // Called when the user finishes all 3 flow steps.
-  // Calculates the verdict and shows it.
-  function goToVerdict(alt) {
-    setSelectedAlt(alt || null)
+  function goToVerdict(alt: Alternative | null): void {
+    setSelectedAlt(alt)
     setVerdict(getVerdict())
     setPage('verdict')
   }
 
-  // Called when the user clicks "Log my decision" on the verdict screen.
-  // Saves the decision to the log and goes back home.
-  function saveDecision(choice) {
+  function saveDecision(choice: string): void {
     const v = choice || verdict || 'skip'
 
-    // Build a date string like "Apr 15, 2026"
-    const today = new Date()
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const today  = new Date()
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     const dateStr = `${months[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`
 
-    // When user picks "Buy this instead", log the alternative's details
-    const logName  = v === 'buy-alt' && selectedAlt ? selectedAlt.title : product.name
-    const logPrice = v === 'buy-alt' && selectedAlt ? selectedAlt.price : product.price
+    const logName    = v === 'buy-alt' && selectedAlt ? selectedAlt.title : product!.name
+    const logPrice   = v === 'buy-alt' && selectedAlt ? selectedAlt.price : product!.price
     const logVerdict = v === 'buy-alt' ? 'buy' : v
 
-    // Create a new log entry object
-    const newEntry = {
-      name:    logName,
-      price:   logPrice,
-      verdict: logVerdict,
-      date:    dateStr,
-    }
+    setLogs(old => [{ name: logName, price: logPrice, verdict: logVerdict, date: dateStr }, ...old])
 
-    // Add the new entry to the TOP of the log list
-    setLogs(old => [newEntry, ...old])
-
-    // Alt counts as a streak win if it's cheaper and/or better rated than the original
-    const altCheaper     = selectedAlt?.price  > 0 && product?.price  > 0 && selectedAlt.price  <  product.price
-    const altBetterRated = selectedAlt?.rating > 0 && product?.rating > 0 && selectedAlt.rating >  product.rating
+    const altCheaper      = (selectedAlt?.price  ?? 0) > 0 && (product?.price  ?? 0) > 0 && (selectedAlt?.price  ?? 0) < product!.price
+    const altBetterRated  = (selectedAlt?.rating ?? 0) > 0 && (product?.rating ?? 0) > 0 && (selectedAlt?.rating ?? 0) > (product?.rating ?? 0)
     const altIsBetterDeal = v === 'buy-alt' && (altCheaper || altBetterRated)
 
     if (logVerdict === 'skip' || logVerdict === 'wait' || altIsBetterDeal) {
       setSaved(old => old + (logPrice || 0))
       setStreak(old => old + 1)
     } else {
-      setStreak(0) // buying at same/higher price resets the streak
+      setStreak(0)
     }
 
-    // Clear the current product and go back to the home screen
     setVerdict(null)
     setProduct(null)
     setPage('home')
   }
 
-  // Show the right screen based on the value of 'page'
   if (page === 'home') {
-    return (
-      <HomePage
-        logs={logs}
-        streak={streak}
-        saved={saved}
-        onStart={startFlow}
-      />
-    )
+    return <HomePage logs={logs} streak={streak} saved={saved} onStart={startFlow} />
   }
 
   if (page === 'flow') {
     return (
       <FlowPage
-        product={product}
+        product={product!}
         budgetMin={budgetMin}
         budgetMax={budgetMax}
         setBudgetMin={setBudgetMin}
         setBudgetMax={setBudgetMax}
+        onAvgScore={setAvgScore}
         onBack={() => setPage('home')}
         onDone={goToVerdict}
       />
@@ -229,72 +224,72 @@ export default function App() {
   if (page === 'verdict') {
     return (
       <VerdictPage
-        product={product}
-        verdict={verdict}
+        product={product!}
+        verdict={verdict!}
         selectedAlt={selectedAlt}
         onSave={saveDecision}
         onHome={() => setPage('home')}
       />
     )
   }
+
+  return null
 }
 
+// ── Home Page ────────────────────────────────────────────────────────────────
 
-// HOME PAGE
-// Shows the stats (saved/opted out/streak),
-// a URL input box
 const EXAMPLE_URL = 'https://fifthandninth.com/products/blue-light-blocking-glasses-boston?variant=32219277754446&country=US&currency=USD&utm_medium=product_sync&utm_source=google&utm_content=sag_organic&utm_campaign=sag_organic&srsltid=AfmBOopt6-hUCKOSNN3QaxN_76kvtDJd9zFvZvWqbYT88PzQ1GoCDfyq6XY'
 
-function HomePage({ logs, streak, saved, onStart }) {
-  const [url, setUrl] = useState('')           // what the user has typed in the box
-  const [status, setStatus] = useState('idle') // 'idle' | 'loading' | 'ready'
-  const [product, setProduct] = useState(null) // the product found from the URL
-  const [manualPrice, setManualPrice] = useState('') // typed price when API can't find it
+interface HomePageProps {
+  logs: LogEntry[]
+  streak: number
+  saved: number
+  onStart: (product: Product) => void
+}
 
-  function handleKeyDown(e) {
+function HomePage({ logs, streak, saved, onStart }: HomePageProps) {
+  const [url, setUrl]               = useState<string>('')
+  const [status, setStatus]         = useState<'idle' | 'loading' | 'ready'>('idle')
+  const [product, setProduct]       = useState<Product | null>(null)
+  const [manualPrice, setManualPrice] = useState<string>('')
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
     if (e.key === 'Tab' && !url) {
       e.preventDefault()
-      handleUrlChange({ target: { value: EXAMPLE_URL } })
+      handleUrlChange({ target: { value: EXAMPLE_URL } } as React.ChangeEvent<HTMLInputElement>)
     }
   }
 
-  // Called every time the user types in the URL input box
-  function handleUrlChange(e) {
+  async function handleUrlChange(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const typed = e.target.value
     setUrl(typed)
     setProduct(null)
     setStatus('idle')
     setManualPrice('')
 
-
-    // Only start the fetch if it looks like a real URL
     if (!typed.startsWith('http')) return
 
-    // Show the spinner, then wait 600ms after the user stops typing before fetching
     setStatus('loading')
-      try {
-        const fetched = await fetchProduct(typed)
-        setProduct(fetched)
-        setStatus('ready')
-      } catch (err) {
-        // Show a specific message if we couldn't extract a product name from the URL
-        const name = err.message === 'Could not extract product name from URL'
-          ? 'Could not read this URL — try the direct product page link'
-          : 'Product from link'
-        setProduct({ name, price: 0, site: getSiteName(typed), url: typed, alternatives: [] })
-        setStatus('ready')
-      }
-    }, 600)
+    try {
+      const fetched = await fetchProduct(typed)
+      setProduct(fetched)
+      setStatus('ready')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : ''
+      const name = message === 'Could not extract product name from URL'
+        ? 'Could not read this URL — try the direct product page link'
+        : 'Product from link'
+      setProduct({ name, price: 0, priceStr: null, rating: null, ratingCount: 0, site: getSiteName(typed), url: typed, alternatives: [] })
+      setStatus('ready')
+    }
   }
 
-  // Count how many past decisions were NOT a buy (i.e. the user optedOut)
   const optedOutCount = logs.filter(log => log.verdict !== 'buy').length
 
   return (
     <div className="page">
       <div className="home-wrap">
 
-        {/* ── Logo and title ── */}
         <div className="home-head">
           <h1 className="home-title">Think before<br />you <em>buy.</em></h1>
           <p className="home-sub">
@@ -302,7 +297,6 @@ function HomePage({ logs, streak, saved, onStart }) {
           </p>
         </div>
 
-        {/* ── Three stats: money saved, times opted out, current streak ── */}
         <div className="stats-bar">
           <div className="stat-card">
             <div className="stat-val green">${saved.toLocaleString()}</div>
@@ -318,7 +312,6 @@ function HomePage({ logs, streak, saved, onStart }) {
           </div>
         </div>
 
-        {/* ── URL input card ── */}
         <div className="enter-card">
           <div className="enter-label">Paste your product link</div>
           <div className="input-row">
@@ -330,20 +323,19 @@ function HomePage({ logs, streak, saved, onStart }) {
               onChange={handleUrlChange}
               onKeyDown={handleKeyDown}
             />
-            {/* The button is disabled until a product has been loaded (and price is known if needed) */}
             <button
               className="enter-btn"
               onClick={() => {
+                if (!product) return
                 const price = product.price > 0 ? product.price : parseFloat(manualPrice) || 0
                 onStart({ ...product, price })
               }}
-              disabled={status !== 'ready' || (!product?.priceStr && product?.price === 0 && !manualPrice)}
+              disabled={status !== 'ready' || (!product?.priceStr && (product?.price ?? 0) === 0 && !manualPrice)}
             >
               Analyse →
             </button>
           </div>
 
-          {/* Show a spinner while the product is "loading" */}
           {status === 'loading' && (
             <div className="fetch-status visible">
               <div className="fetch-spinner" />
@@ -351,7 +343,6 @@ function HomePage({ logs, streak, saved, onStart }) {
             </div>
           )}
 
-          {/* Show the product preview once it's ready */}
           {status === 'ready' && product && (
             <div className="fetch-preview visible">
               <div className="fetch-preview-icon">{product.icon}</div>
@@ -375,54 +366,49 @@ function HomePage({ logs, streak, saved, onStart }) {
             </div>
           )}
 
-          {/* Show a hint when nothing has been typed yet */}
           {status === 'idle' && (
-            <div className="enter-hint">
-              Paste a link from Google Shopping
-            </div>
+            <div className="enter-hint">Paste a link from Google Shopping</div>
           )}
         </div>
-
 
       </div>
     </div>
   )
 }
 
+// ── Flow Page ────────────────────────────────────────────────────────────────
 
+interface FlowPageProps {
+  product: Product
+  budgetMin: number
+  budgetMax: number
+  setBudgetMin: (v: number) => void
+  setBudgetMax: (v: number) => void
+  onAvgScore: (score: number | null) => void
+  onBack: () => void
+  onDone: (alt: Alternative | null) => void
+}
 
-//   Step 1 → price + quality breakdown
-//   Step 2 → enter your budget range
-//   Step 3 → see alternative options
-function FlowPage({ product, budgetMin, budgetMax, setBudgetMin, setBudgetMax, onBack, onDone }) {
-  const [step, setStep] = useState(0) // starts at step 0 (first step)
+function FlowPage({ product, budgetMin, budgetMax, setBudgetMin, setBudgetMax, onAvgScore, onBack, onDone }: FlowPageProps) {
+  const [step, setStep] = useState<number>(0)
 
-  // The progress bar fills up as steps are completed.
   const progressPercent = ((step + 1) / 3) * 100
-
-  function goToNextStep() {
-    setStep(step + 1)
-  }
 
   return (
     <div className="page flow-page">
-
-      {/* Top bar with back button, product name, and step counter */}
       <div className="flow-topbar">
         <div className="back-btn" onClick={onBack}>←</div>
         <div className="flow-product-name">{product?.name}</div>
         <div className="flow-step-indicator">Step {step + 1} of 3</div>
       </div>
 
-      {/* Blue progress bar — grows wider with each step */}
       <div className="progress-track">
         <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
       </div>
 
-      {/* Show the correct step component based on the value of 'step' */}
       <div className="flow-body">
         {step === 0 && (
-          <Step1CostAndQuality product={product} onNext={goToNextStep} />
+          <Step1CostAndQuality product={product} onAvgScore={onAvgScore} onNext={() => setStep(1)} />
         )}
         {step === 1 && (
           <Step2Budget
@@ -431,7 +417,7 @@ function FlowPage({ product, budgetMin, budgetMax, setBudgetMin, setBudgetMax, o
             budgetMax={budgetMax}
             setBudgetMin={setBudgetMin}
             setBudgetMax={setBudgetMax}
-            onNext={goToNextStep}
+            onNext={() => setStep(2)}
           />
         )}
         {step === 2 && (
@@ -442,63 +428,57 @@ function FlowPage({ product, budgetMin, budgetMax, setBudgetMin, setBudgetMax, o
   )
 }
 
-// Price breakdown and the quality scores
+// ── Step 1 ───────────────────────────────────────────────────────────────────
 
-function Step1CostAndQuality({ product, onNext }) {
+interface Step1Props {
+  product: Product
+  onAvgScore: (score: number | null) => void
+  onNext: () => void
+}
+
+function Step1CostAndQuality({ product, onAvgScore, onNext }: Step1Props) {
   const price       = product?.price       || 0
-  const rating      = product?.rating      || null  // 0–5 from Google Shopping
+  const rating      = product?.rating      ?? null
   const ratingCount = product?.ratingCount || 0
 
-  // Scale 0–5 star rating to a 0–10 score
-  const satisfactionScore = rating ? Math.round(rating * 2) : null
+  const satisfactionScore = rating !== null ? Math.round(rating * 2) : null
 
-  // Value for money: combines price-vs-alternatives and rating
-  const altPrices = (product?.alternatives || []).map(a => a.price).filter(p => p > 0)
-  const avgAltPrice = altPrices.length
-    ? altPrices.reduce((a, b) => a + b, 0) / altPrices.length
-    : 0
-  const priceScore  = price > 0 && avgAltPrice > 0
-    ? Math.min(10, (avgAltPrice / price) * 5)
-    : null
-  const ratingScore = rating ? rating * 2 : null  // 0–5 stars → 0–10
-  const valueComponents = [priceScore, ratingScore].filter(v => v !== null)
+  const altPrices   = (product?.alternatives || []).map(a => a.price).filter(p => p > 0)
+  const avgAltPrice = altPrices.length ? altPrices.reduce((a, b) => a + b, 0) / altPrices.length : 0
+  const priceScore  = price > 0 && avgAltPrice > 0 ? Math.min(10, (avgAltPrice / price) * 5) : null
+  const ratingScore = rating !== null ? rating * 2 : null
+
+  const valueComponents = ([priceScore, ratingScore] as (number | null)[]).filter((v): v is number => v !== null)
   const valueScore = valueComponents.length
     ? Math.round(valueComponents.reduce((a, b) => a + b, 0) / valueComponents.length)
     : null
 
-  // metrics if data is provided
-  const metrics = [
+  interface Metric { label: string; score: number; color: string }
+  const metrics: Metric[] = ([
     satisfactionScore !== null && { label: 'Customer satisfaction', score: satisfactionScore, color: satisfactionScore >= 7 ? 'green' : satisfactionScore >= 5 ? 'amber' : 'red' },
     valueScore        !== null && { label: 'Value for money',        score: valueScore,        color: valueScore >= 7        ? 'green' : valueScore >= 5        ? 'amber' : 'red' },
-  ].filter(Boolean)
+  ] as (Metric | false)[]).filter((m): m is Metric => Boolean(m))
 
-  const avgScore = metrics.length
-    ? (metrics.reduce((s, m) => s + m.score, 0) / metrics.length).toFixed(1)
+  const avgScore: number | null = metrics.length
+    ? parseFloat((metrics.reduce((s, m) => s + m.score, 0) / metrics.length).toFixed(1))
     : null
 
-  let qualityLabel, pillClass
-  if (avgScore === null) {
-    qualityLabel = 'No rating data available'
-    pillClass = 'pill-mixed'
-  } else if (avgScore >= 6.5) {
-    qualityLabel = 'Good overall quality'
-    pillClass = 'pill-good'
-  } else if (avgScore >= 4.5) {
-    qualityLabel = 'Mixed quality signals'
-    pillClass = 'pill-mixed'
-  } else {
-    qualityLabel = 'Quality concerns found'
-    pillClass = 'pill-poor'
+  let qualityLabel: string, pillClass: string
+  if (avgScore === null)    { qualityLabel = 'No rating data available'; pillClass = 'pill-mixed' }
+  else if (avgScore >= 6.5) { qualityLabel = 'Good overall quality';     pillClass = 'pill-good'  }
+  else if (avgScore >= 4.5) { qualityLabel = 'Mixed quality signals';    pillClass = 'pill-mixed' }
+  else                      { qualityLabel = 'Quality concerns found';   pillClass = 'pill-poor'  }
+
+  function handleNext(): void {
+    onAvgScore(avgScore)
+    onNext()
   }
 
   return (
     <>
-      {/* Big price display with per-month and per-day breakdown */}
       <div className="cost-hero">
         <div className="cost-label">You're about to spend</div>
-        <div className="cost-price">
-          {price > 0 ? `$${price.toLocaleString()}` : '?'}
-        </div>
+        <div className="cost-price">{price > 0 ? `$${price.toLocaleString()}` : '?'}</div>
         {price > 0 && (
           <>
             <div className="cost-divider" />
@@ -516,7 +496,6 @@ function Step1CostAndQuality({ product, onNext }) {
         )}
       </div>
 
-      {/* Quality card- data from Google Shopping */}
       <div className="quality-card">
         <div className="quality-title">
           Quality breakdown · {product?.name}
@@ -548,39 +527,38 @@ function Step1CostAndQuality({ product, onNext }) {
         </div>
       </div>
 
-      <button className="next-btn ready" onClick={onNext}>Set my budget range →</button>
+      <button className="next-btn ready" onClick={handleNext}>Set my budget range →</button>
     </>
   )
 }
 
-// Budget range
+// ── Step 2 ───────────────────────────────────────────────────────────────────
 
-function Step2Budget({ product, budgetMin, budgetMax, setBudgetMin, setBudgetMax, onNext }) {
+interface Step2Props {
+  product: Product
+  budgetMin: number
+  budgetMax: number
+  setBudgetMin: (v: number) => void
+  setBudgetMax: (v: number) => void
+  onNext: () => void
+}
+
+function Step2Budget({ product, budgetMin, budgetMax, setBudgetMin, setBudgetMax, onNext }: Step2Props) {
   const price = product?.price || 0
 
-  // Build a message comparing the product price to the user's budget
-  let budgetMessage = null
+  let budgetMessage: React.ReactNode = null
   if (price > 0 && budgetMax > 0) {
     if (price > budgetMax) {
-      budgetMessage = (
-        <span className="range-over">
-           Warning ${price} is ${price - budgetMax} over your max budget
-        </span>
-      )
+      budgetMessage = <span className="range-over">⚠ Warning ${price} is ${price - budgetMax} over your max budget</span>
     } else if (budgetMin > 0 && price < budgetMin) {
-      budgetMessage = (
-        <span className="range-under">✓ ${price} is below your minimum — great value</span>
-      )
+      budgetMessage = <span className="range-under">✓ ${price} is below your minimum — great value</span>
     } else {
-      budgetMessage = (
-        <span className="range-ok">✓ ${price} fits your budget range</span>
-      )
+      budgetMessage = <span className="range-ok">✓ ${price} fits your budget range</span>
     }
   }
 
   return (
     <div className="eva-card">
-      {/* Eva avatar header */}
       <div className="eva-header">
         <div className="eva-avatar-sm">🌿</div>
         <div>
@@ -597,7 +575,6 @@ function Step2Budget({ product, budgetMin, budgetMax, setBudgetMin, setBudgetMax
         </div>
       )}
 
-      {/* Two number inputs side by side: Min and Max */}
       <div className="range-row">
         <input
           className="range-input"
@@ -618,10 +595,8 @@ function Step2Budget({ product, budgetMin, budgetMax, setBudgetMin, setBudgetMax
         />
       </div>
 
-      {/* Show the budget comparison message */}
       <div className="range-status">{budgetMessage}</div>
 
-      {/* Button is only clickable once the user has typed a max budget */}
       <button
         className={`next-btn${budgetMax > 0 ? ' ready' : ''}`}
         onClick={() => { if (budgetMax > 0) onNext() }}
@@ -632,14 +607,20 @@ function Step2Budget({ product, budgetMin, budgetMax, setBudgetMin, setBudgetMax
   )
 }
 
-// ── Step 3: Alternative options ───────────────────────────────────────────
+// ── Step 3 ───────────────────────────────────────────────────────────────────
 
-function Step3Alternatives({ product, budgetMin, budgetMax, onDone }) {
-  const [picked, setPicked] = useState(null)
+interface Step3Props {
+  product: Product
+  budgetMin: number
+  budgetMax: number
+  onDone: (alt: Alternative | null) => void
+}
 
-  // Filter to alternatives within the user's budget range
+function Step3Alternatives({ product, budgetMin, budgetMax, onDone }: Step3Props) {
+  const [picked, setPicked] = useState<number | null>(null)
+
   const alternatives = (product?.alternatives || []).filter(item => {
-    if (item.price === 0) return true // keep items with no price info
+    if (item.price === 0) return true
     if (budgetMax > 0 && item.price > budgetMax) return false
     if (budgetMin > 0 && item.price < budgetMin) return false
     return true
@@ -647,7 +628,6 @@ function Step3Alternatives({ product, budgetMin, budgetMax, onDone }) {
 
   return (
     <>
-      {/* Eva card header */}
       <div className="eva-card" style={{ marginBottom: '10px' }}>
         <div className="eva-header">
           <div className="eva-avatar-sm">🌿</div>
@@ -669,9 +649,7 @@ function Step3Alternatives({ product, budgetMin, budgetMax, onDone }) {
         <div className="alts-step-grid">
           {alternatives.map((item, i) => {
             const isCheaper = product?.price > 0 && item.price > 0 && item.price < product.price
-            const saving    = isCheaper
-              ? Math.round(((product.price - item.price) / product.price) * 100)
-              : null
+            const saving    = isCheaper ? Math.round(((product.price - item.price) / product.price) * 100) : null
 
             return (
               <div
@@ -681,26 +659,22 @@ function Step3Alternatives({ product, budgetMin, budgetMax, onDone }) {
                 style={{ cursor: 'pointer' }}
               >
                 {item.imageUrl ? (
-                  <img
-                    src={item.imageUrl}
-                    alt=""
-                    style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }}
-                  />
+                  <img src={item.imageUrl} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }} />
                 ) : (
                   <div className="alt-step-icon">🛍️</div>
                 )}
                 <div className="alt-step-info">
                   <div className="alt-step-name">{item.title}</div>
                   <div className="alt-step-desc">{item.source}</div>
-                  <div className="alt-step-price">
-                    {item.price > 0 ? `$${item.price.toFixed(2)}` : item.priceStr || 'See site'}
+                  <div className="alt-step-price-row">
+                    <span className="alt-step-price">
+                      {item.price > 0 ? `$${item.price.toFixed(2)}` : item.priceStr || 'See site'}
+                    </span>
+                    {item.rating && (
+                      <span className="alt-step-rating">⭐ {item.rating}</span>
+                    )}
                   </div>
-                  {saving !== null && (
-                    <span className="alt-step-tag tag-cheap">Save {saving}%</span>
-                  )}
-                  {item.rating && (
-                    <span className="alt-step-tag tag-best">⭐ {item.rating}</span>
-                  )}
+                  {saving !== null && <span className="alt-step-tag tag-cheap">Save {saving}%</span>}
                 </div>
               </div>
             )
@@ -708,25 +682,27 @@ function Step3Alternatives({ product, budgetMin, budgetMax, onDone }) {
         </div>
       )}
 
-      <button className="next-btn ready" onClick={() => onDone(picked !== null ? alternatives[picked] : null)}>Get my verdict →</button>
+      <button className="next-btn ready" onClick={() => onDone(picked !== null ? alternatives[picked] : null)}>
+        Get my verdict →
+      </button>
     </>
   )
 }
 
+// ── Verdict Page ─────────────────────────────────────────────────────────────
 
-// ============================================================
-// VERDICT PAGE
-//
-// Shows the final recommendation: buy, wait 48 hours, or skip.
-// Also shows alternative suggestions based on the verdict.
-// ============================================================
-
-// Text to display for each possible verdict
-const VERDICT_INFO = {
+const VERDICT_INFO: Record<string, VerdictInfo> = {
+  'do not buy': {
+    icon: '⏸️',
+    label: 'Eva says: Hold off',
+    headline: "This doesn't look like the right purchase right now.",
+    reason: "Either it's over budget or the quality signals aren't strong enough.",
+  },
   wait: {
+    icon: '⏸️',
     label: 'Eva says: There are better options here',
-    headline: "You might want this but i'm not sure it's best for you.",
-    reason: "This product may not offer the best value for its price.",
+    headline: "You might want this but I'm not sure it's best for you.",
+    reason: 'This product may not offer the best value for its price.',
   },
   buy: {
     icon: '✅',
@@ -736,7 +712,15 @@ const VERDICT_INFO = {
   },
 }
 
-function VerdictPage({ product, verdict, selectedAlt, onSave, onHome }) {
+interface VerdictPageProps {
+  product: Product
+  verdict: string
+  selectedAlt: Alternative | null
+  onSave: (choice: string) => void
+  onHome: () => void
+}
+
+function VerdictPage({ product, verdict, selectedAlt, onSave, onHome }: VerdictPageProps) {
   const v    = verdict || 'buy'
   const info = VERDICT_INFO[v]
 
@@ -744,7 +728,6 @@ function VerdictPage({ product, verdict, selectedAlt, onSave, onHome }) {
     <div className="page">
       <div className="verdict-wrap">
 
-        {/* Main verdict card */}
         <div className={`verdict-card ${v}`}>
           <div className="verdict-icon">{info.icon}</div>
           <div className="verdict-label">{info.label}</div>
@@ -752,17 +735,12 @@ function VerdictPage({ product, verdict, selectedAlt, onSave, onHome }) {
           <div className="verdict-reason">{info.reason}</div>
         </div>
 
-        {/* If the user picked an alternative in Step 3, show it here */}
         {selectedAlt && (
           <div style={{ margin: '14px 0 4px' }}>
             <div className="alts-title" style={{ marginBottom: '8px' }}>Your chosen alternative</div>
             <div className="alt-step-card picked" style={{ display: 'flex', gap: '12px', alignItems: 'center', cursor: 'default' }}>
               {selectedAlt.imageUrl ? (
-                <img
-                  src={selectedAlt.imageUrl}
-                  alt=""
-                  style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }}
-                />
+                <img src={selectedAlt.imageUrl} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }} />
               ) : (
                 <div className="alt-step-icon">🛍️</div>
               )}
@@ -777,20 +755,17 @@ function VerdictPage({ product, verdict, selectedAlt, onSave, onHome }) {
           </div>
         )}
 
-        {/* User makes the final call */}
         <div className="alts-title" style={{ marginBottom: '10px', marginTop: '14px' }}>What do you want to do?</div>
         <div className="verdict-actions">
           <button className="vbtn vbtn-primary" onClick={() => onSave('buy')}>
             Buy original{selectedAlt && product?.price > 0 ? ` · $${product.price}` : ''}
           </button>
-          {selectedAlt ? (
+          {selectedAlt && (
             <button className="vbtn vbtn-primary" onClick={() => onSave('buy-alt')}>
               Buy alternative{selectedAlt.price > 0 ? ` · $${selectedAlt.price.toFixed(2)}` : ''}
             </button>
-          ) : null}
-          <button className="vbtn vbtn-ghost" onClick={() => onSave('skip')}>
-            Skip it
-          </button>
+          )}
+          <button className="vbtn vbtn-ghost" onClick={() => onSave('skip')}>Skip it</button>
         </div>
 
         <button className="vbtn vbtn-ghost" style={{ marginTop: '8px' }} onClick={onHome}>

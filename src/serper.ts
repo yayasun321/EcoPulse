@@ -1,11 +1,16 @@
+// ============================================================
 // SERPER.DEV GOOGLE SHOPPING API
 //
 // One search call returns the top product match plus
 // alternative listings from other stores — used for both
-// the product preview on the home screen and alternatives.
+// the product preview on the home screen and Step 3 alternatives.
+//
+// Credentials are read from .env:
+//   VITE_SERPER_API_KEY → your Serper API key from serper.dev
+// ============================================================
 
 // Extract a readable search query from an e-commerce or Google Shopping URL.
-export function urlToSearchQuery(url) {
+export function urlToSearchQuery(url: string): string {
   try {
     const { hostname, pathname, searchParams } = new URL(url)
 
@@ -54,7 +59,7 @@ export function urlToSearchQuery(url) {
 
 // Search Google Shopping via Serper.
 // Returns the top result as `product` and remaining results as `alternatives`.
-export async function searchShopping(query) {
+export async function searchShopping(query: string) {
   const key = import.meta.env.VITE_SERPER_API_KEY
 
   if (!key || key === 'your-serper-api-key-here') {
@@ -74,7 +79,8 @@ export async function searchShopping(query) {
 
   const data = await res.json()
 
-  const items = (data.shopping || []).map(item => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items = (data.shopping || []).map((item: any) => ({
     title:       item.title,
     price:       parseFloat((item.price || '0').replace(/[^0-9.]/g, '')) || 0,
     priceStr:    item.price || null,
