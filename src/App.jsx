@@ -32,9 +32,7 @@ async function fetchProduct(url) {
         const data    = await res.json()
         const p       = data.product
         const variant = p?.variants?.[0]
-        console.log('[Step 1] Shopify product:', p?.title, '| type:', p?.product_type, '| price:', variant?.price)
         if (p?.title) {
-          // whitespace
           const cleanTitle = p.title.replace(/\s+/g, ' ').trim()
           // Append product_type if the title alone is not descriptive enough
           const type = p.product_type?.replace(/\s+/g, ' ').trim()
@@ -47,10 +45,8 @@ async function fetchProduct(url) {
           priceStr = `$${parseFloat(variant.price).toFixed(2)}`
         }
       }
-    } else {
-      console.log('[Step 1] Not a Shopify URL — skipping')
-    }
-  } catch (e) { console.log('[Step 1] Shopify fetch failed:', e.message) }
+    } 
+  } catch (e) {( e.message) }
 
   // Always prefer the URL path for the product name — it's more reliable than
   // page titles which can be the site name or require JavaScript to render
@@ -69,17 +65,16 @@ async function fetchProduct(url) {
       const ml   = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(cleanUrl)}`)
       const json = await ml.json()
       const data = json.data || {}
-      console.log('[Step 2] Microlink price:', data.price)
       const raw = data.price?.amount
       if (raw) {
         price    = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0
         priceStr = raw
       }
-    } catch (e) { console.log('[Step 2] Microlink failed:', e.message) }
+    } catch (e) {( e.message) }
   }
 
   if (!name) name = 'Product from link'
-  console.log('[After steps 1+2] name:', name, '| price:', price, '| priceStr:', priceStr)
+   name, '| price:', price, '| priceStr:', priceStr)
 
   // Get ratings/alt. from Serper
   let rating       = null
@@ -87,9 +82,7 @@ async function fetchProduct(url) {
   let alternatives = []
 
   try {
-    console.log('[Step 3] Searching Serper for:', name)
     const results = await searchShopping(name)
-    console.log('[Step 3] Serper top result:', results.product)
     rating       = results.product?.rating      || null
     ratingCount  = results.product?.ratingCount || 0
     alternatives = results.alternatives          || []
@@ -97,7 +90,6 @@ async function fetchProduct(url) {
     if (!priceStr && price === 0 && results.product?.price > 0) {
       price    = results.product.price
       priceStr = results.product.priceStr
-      console.log('[Step 3] Using Serper price:', priceStr)
     }
   } catch (e) { console.log('[Step 3] Serper failed:', e.message) }
 
