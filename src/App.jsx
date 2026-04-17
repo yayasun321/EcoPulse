@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './index.css'
-import { urlToSearchQuery, searchShopping } from './serper'
+import { urlToSearchQuery, searchShopping } from './serper
 
 
 function getSiteName(url) {
@@ -25,9 +25,7 @@ async function fetchProduct(url) {
     const match = pathname.match(/^\/products\/([^/?]+)/)
     if (match) {
       const jsonUrl = `${origin}/products/${match[1]}.json`
-      console.log('[Step 1] Trying Shopify JSON:', jsonUrl)
       const res = await fetch(jsonUrl)
-      console.log('[Step 1] Shopify response status:', res.status)
       if (res.ok) {
         const data    = await res.json()
         const p       = data.product
@@ -54,7 +52,6 @@ async function fetchProduct(url) {
 
   // Microlink fetches the page for price 
   if (!priceStr && price === 0) {
-    console.log('[Step 2] Trying Microlink...')
     try {
       // Strip tracking params
       const cleanUrl = (() => {
@@ -129,12 +126,16 @@ export default function App() {
   useEffect(() => { localStorage.setItem('eva_streak', String(streak)) },       [streak])
   useEffect(() => { localStorage.setItem('eva_saved',  String(saved)) },        [saved])
 
-  // Decide whether the user should buy or wait based on budget
+  // Decide whether the user should buy or wait based on budget and quality
   function getVerdict() {
     if (product && budgetMax > 0 && product.price > budgetMax) {
       return 'do not buy'
     }
-    return 'buy'
+    else if(avgScore > 6){
+      return 'buy'
+    }
+    else:
+      return 'do not buy'
   }
 
   // Called when the user clicks "Analyse →" on the home screen.
@@ -250,10 +251,6 @@ function HomePage({ logs, streak, saved, onStart }) {
   const [product, setProduct] = useState(null) // the product found from the URL
   const [manualPrice, setManualPrice] = useState('') // typed price when API can't find it
 
-  // useRef lets us hold onto the timer ID so we can cancel it.
-  // We use ref (not state) because changing it shouldn't re-render the page.
-  const timerRef = useRef(null)
-
   function handleKeyDown(e) {
     if (e.key === 'Tab' && !url) {
       e.preventDefault()
@@ -275,8 +272,6 @@ function HomePage({ logs, streak, saved, onStart }) {
 
     // Show the spinner, then wait 600ms after the user stops typing before fetching
     setStatus('loading')
-
-    timerRef.current = setTimeout(async () => {
       try {
         const fetched = await fetchProduct(typed)
         setProduct(fetched)
