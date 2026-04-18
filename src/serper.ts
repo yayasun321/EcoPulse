@@ -60,7 +60,8 @@ export function urlToSearchQuery(url: string): string {
 // Search Google Shopping via Serper.
 // Returns the top result as `product` and remaining results as `alternatives`.
 export async function searchShopping(query: string) {
-  const res = await fetch('/api/shopping', {
+  const base = import.meta.env.VITE_BACKEND_URL ?? ''
+  const res = await fetch(`${base}/api/shopping`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
