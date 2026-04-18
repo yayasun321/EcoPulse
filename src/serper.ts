@@ -60,16 +60,9 @@ export function urlToSearchQuery(url: string): string {
 // Search Google Shopping via Serper.
 // Returns the top result as `product` and remaining results as `alternatives`.
 export async function searchShopping(query: string) {
-  const key = import.meta.env.VITE_SERPER_API_KEY
-
-  if (!key || key === 'your-serper-api-key-here') {
-    throw new Error('MISSING_CREDENTIALS')
-  }
-
-  const res = await fetch('https://google.serper.dev/shopping', {
+  const res = await fetch('/api/shopping', {
     method: 'POST',
     headers: {
-      'X-API-KEY': key,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ q: query }),

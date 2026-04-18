@@ -5,6 +5,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
       // Proxy eBay OAuth token requests to avoid CORS
       '/ebay-token': {
         target: 'https://api.ebay.com',
