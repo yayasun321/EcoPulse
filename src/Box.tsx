@@ -2,7 +2,6 @@ import { useState } from "react";
 import { db, auth } from "./firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import "./Box.css";
-import Button from "./Button";
 
 const Box = () => {
   const [inputValue, setInputValue] = useState("");

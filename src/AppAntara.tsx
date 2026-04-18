@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "./index.css";
 import { urlToSearchQuery, searchShopping } from "./serper";
+import Button from "./Button";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface Alternative {
@@ -34,7 +35,7 @@ interface LogEntry {
 interface VerdictInfo {
   icon: string;
   label: string;
-  
+
   headline: string;
   reason: string;
 }
@@ -349,7 +350,7 @@ function HomePage({ logs, streak, saved, onStart }: HomePageProps) {
   }
 
   const optedOutCount = logs.filter((log) => log.verdict !== "buy").length;
-
+  const [showEvaluation, setShowEvaluation] = useState(false);
   return (
     <div className="page">
       <div className="home-wrap">
@@ -451,6 +452,9 @@ function HomePage({ logs, streak, saved, onStart }: HomePageProps) {
             <div className="enter-hint">Paste a link from Google Shopping</div>
           )}
         </div>
+        <Button onClick={() => setShowEvaluation(true)}>
+          Return to Home Page
+        </Button>
       </div>
     </div>
   );
