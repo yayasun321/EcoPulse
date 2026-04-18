@@ -8,10 +8,10 @@ import {
   where,
 } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { db, auth } from "./firebase";
-import Box from "./Box";
-import Button from "./Button";
-import Carousel from "./Components/MyCarousel";
+import { db, auth } from "./src/firebase";
+import Box from "./src/Box";
+import Button from "./src/Button";
+import Carousel from "./src/Components/MyCarousel";
 import "../node_modules/bootstrap/dist/css/bootstrap.min.css";
 import "./Button.css";
 
