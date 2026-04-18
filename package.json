@@ -41,5 +41,11 @@
   "bugs": {
     "url": "https://github.com/yayasun321/impluse-buy/issues"
   },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "homepage": "https://github.com/yayasun321/impluse-buy#readme"
 }
