@@ -34,6 +34,7 @@ interface LogEntry {
 interface VerdictInfo {
   icon: string;
   label: string;
+  
   headline: string;
   reason: string;
 }
@@ -196,7 +197,7 @@ export default function AppAntara() {
   }
 
   function saveDecision(choice: string): void {
-    const v = choice || verdict || "skip";
+    const v = choice || verdict || "opt out";
 
     const today = new Date();
     const months = [
@@ -236,7 +237,7 @@ export default function AppAntara() {
       (selectedAlt?.rating ?? 0) > (product?.rating ?? 0);
     const altIsBetterDeal = v === "buy-alt" && (altCheaper || altBetterRated);
 
-    if (logVerdict === "skip" || logVerdict === "wait" || altIsBetterDeal) {
+    if (logVerdict === "opt out" || logVerdict === "wait" || altIsBetterDeal) {
       setSaved((old) => old + (logPrice || 0));
       setStreak((old) => old + 1);
     } else {
@@ -1033,8 +1034,8 @@ function VerdictPage({
                 : ""}
             </button>
           )}
-          <button className="vbtn vbtn-ghost" onClick={() => onSave("skip")}>
-            Skip it
+          <button className="vbtn vbtn-ghost" onClick={() => onSave("opt out")}>
+            opt out it
           </button>
         </div>
 
