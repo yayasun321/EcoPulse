@@ -23,7 +23,9 @@ const Box = () => {
 
   return (
     <div className="container bg-white p-5 rounded shadow-sm text-center">
-      <h1 className="mb-4">Add your purchase to the list below</h1>
+      <h1 className="mb-4">
+        After evalutaing, if you decided to purchase, add it to the list below
+      </h1>
       <div className="d-flex flex-column align-items-center">
         <input
           type="text"
@@ -33,7 +35,7 @@ const Box = () => {
           onChange={(e) => setInputValue(e.target.value)}
         />
         <button className="btn btn-success px-4" onClick={handleLog}>
-          Enter
+          Log
         </button>
       </div>
     </div>

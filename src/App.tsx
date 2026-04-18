@@ -73,7 +73,7 @@ function App() {
   return (
     <div className="container mt-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="Main-Title">Want to buy an item?</h1>
+        <h2 className="Main-Title">Want to buy an item?</h2>
         <button
           className="btn btn-outline-danger btn-sm"
           onClick={() => signOut(auth)}
