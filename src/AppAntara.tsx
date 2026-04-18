@@ -1035,7 +1035,7 @@ function VerdictPage({
             </button>
           )}
           <button className="vbtn vbtn-ghost" onClick={() => onSave("opt out")}>
-            opt out it
+            opt out
           </button>
         </div>
 
