@@ -5,6 +5,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (_req, res) => res.json({ status: "ok" }));
+
 app.post("/api/shopping", async (req, res) => {
   try {
     const response = await fetch("https://google.serper.dev/shopping", {
