@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "./index.css";
 import { urlToSearchQuery, searchShopping } from "./serper";
 import Button from "./Button";
+import App from "./App";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface Alternative {
@@ -351,6 +352,9 @@ function HomePage({ logs, streak, saved, onStart }: HomePageProps) {
 
   const optedOutCount = logs.filter((log) => log.verdict !== "buy").length;
   const [showEvaluation, setShowEvaluation] = useState(false);
+  if (showEvaluation) {
+    return <App />;
+  }
   return (
     <div className="page">
       <div className="home-wrap">
