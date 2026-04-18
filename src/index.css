@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css?family=Fira+Sans:400,500,600,700,800');
 /* ── Reset & base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -15,9 +16,27 @@
   --blue:  #2563eb;
   --shadow: 0 2px 12px rgba(15,13,20,.07);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #FFFCA8;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --bs-body-bg: #FFFCA8;
+  background-color: hsl(58, 100%, 83%);
 }
 
-body { background: var(--bg); color: #FFFCA8; min-height: 100vh; }
+body { 
+  background: var(--bg); 
+  color: #FFFCA8; 
+  min-height: 100vh;
+  background-color: #FFFCA8 !important;
+ }
 
 /* ── Page wrapper ── */
 .page {
@@ -382,3 +401,107 @@ body { background: var(--bg); color: #FFFCA8; min-height: 100vh; }
 .vbtn-primary:hover { background: var(--blue); }
 .vbtn-ghost   { background: transparent; color: var(--ink2); border: 1.5px solid var(--border); }
 .vbtn-ghost:hover { background: var(--bg); }
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #FFFCA8;
+  }
+  a:hover {
+    color: #00a66f;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1,h2,h3,h4,h5,h6,label,span {
+  font-weight: 500;
+  font-family: 'Fira Sans', sans-serif;
+}
+body, html, .App, #root, .auth-wrapper {
+  width: 100%;
+  height: 100%;
+}
+.navbar-light {
+  background-color: #ffffff;
+  box-shadow: 0px 14px 80px rgba(34, 35, 58, 0.2);
+}
+.auth-wrapper {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  text-align: left;
+}
+.auth-inner {
+  width: 450px;
+  margin: auto;
+  background: #ffffff;
+  
+  padding: 40px 55px 45px 55px;
+  border-radius: 15px;
+  transition: all .3s;
+}
+.auth-wrapper .form-control:focus {
+  border-color: #00a66f;
+  box-shadow: 0 0 0 0.25rem rgba(87, 211, 100, 0.25) !important;
+  outline: 0;
+}
+.auth-wrapper h3 {
+  text-align: center;
+  margin: 0;
+  line-height: 1;
+  padding-bottom: 20px;
+}
+.custom-control-label {
+  font-weight: 400;
+}
+.forgot-password,
+.forgot-password a {
+  text-align: left;
+  font-size: 15px;
+  padding-top: 10px;
+  color: #213547;
+  margin: 0;
+}
+.forgot-password a {
+  color: #00a66f;
+  text-decoration: underline;
+}
+
+.btn-secondary {
+  background-color: #00a66f !important;
+  color: #213547;
+}
+
+.btn-link {
+  color: #00a66f !important;
+  text-decoration: underline;
+  
+}
+
+.form-control {
+  border-color: #00a66f;
+}
+
+
+.Main-Title {
+  font-size: 60px;
+  text-align: center;
+  margin-top: 40px;
+  width: 100%;
+  display: block;
+}
+
+.Purchased-Title {
+  padding-top: 20px;
+  padding-left: 120px;
+  width: 100vw !important;
+  display: block;
+  text-align: left !important;
+  align-self: flex-start;
+}

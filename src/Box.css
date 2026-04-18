@@ -1,0 +1,11 @@
+.login-box {
+  width: 100%;
+  width: 1100px;
+  min-height: 382px;
+  background-color: #FFFFFF;
+  color: #000000;
+  margin: 57px auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+ 
