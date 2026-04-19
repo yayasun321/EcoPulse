@@ -35,16 +35,11 @@ function MyCarousel() {
       <Carousel.Item>
         <img src={background} />
         <Carousel.Caption>
-          <h1>Why should I use this site?</h1>
+          <h1>How do I use this site?</h1>
           <h3>
-            Every time you decide to purchase a product, do you wonder if it’s
-            worthwhile? Do you use them often? Or do these purchases just pile
-            up?
-          </h3>
-          <h3>
-            In our website, simply input the URL of your purchase and our AI
-            chat-box will ask personalized questions to help you evaluate your
-            purchase and give possible alternatives.
+            In our website, simply input the name and URL of your purchase and
+            our AI Eva will evaluate the product and give possible alternatives
+            before you decide.
           </h3>
           <p>It’ll save the environment and your wallet!</p>
         </Carousel.Caption>
