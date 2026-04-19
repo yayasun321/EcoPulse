@@ -24,7 +24,7 @@ const Box = () => {
   return (
     <div className="container bg-white p-5 rounded shadow-sm text-center">
       <h1 className="mb-4">
-        After evaluating, if you decided to purchase, add it to the list below
+        After evaluating, if you decide to purchase, add it to the list below
       </h1>
       <div className="d-flex flex-column align-items-center">
         <input
